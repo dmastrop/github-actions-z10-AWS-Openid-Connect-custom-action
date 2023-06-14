@@ -153,7 +153,8 @@ jobs:
           role-to-assume: arn:aws:iam::725291656587:role/github_identity_provider_role_1
           aws-region: us-west-1
           # this is the region of the new s3 bucket that I created for this project
-          # we no longer need the bucket region in the step below
+          # I still needd the bucket-region below for the url because I am non-default us-west-1. He does not need it below because
+          # the default is us-east-1 and that is where his s3 bucket is.
 
 
       - name: Deploy site
@@ -203,8 +204,9 @@ jobs:
           # this file is local and on root of this directory on the deploy runner, so ./dist
           # see path: specified above
           
-          # the bucket-region is now specified in the aws-region above so we can comment this out.
-          #bucket-region: us-west-1
+          # the bucket-region is in the aws-region above but this is still required for the output url below
+          # he did not need this anylonger because the default is us-east-1 and that is where his s3 bucket is.
+          bucket-region: us-west-1
 
       - name: Output information of the website to github logs
         run: |
