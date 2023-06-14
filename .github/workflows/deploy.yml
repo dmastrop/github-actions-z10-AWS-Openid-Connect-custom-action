@@ -96,21 +96,66 @@ jobs:
         with:
           name: dist-files
           path: dist
+  
+  
   deploy:
+
+  # need to add permissions for id-token so that github can use the identity provider  
+  # which can be used to create the token to open OpenID session with AWS (see also below Get AWS permissions.....)
+  # write is required because these types of tokens are created during the job and then destroyed after the job
+  # to create it the write permission is required.  The identity provider and its role provisions the token and its role rights.
+  # Because this deploy job also has an actions/checkout for our code to the runner/container, we need to also add
+  # contents: read as well because AWS will a have to get the dist files onto S3.
+  # Github also needs this read permission because it  has to download the artifacts to the runner/container.
+  # We need this now because once a write permission is granted (id-token) all other permissions are denied unless specifically listed
+  # so the actions/checkout will not work without the contents: read
+
+    permissions:
+      id-token: write
+      contents: read
+
     needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Get code
         uses: actions/checkout@v3
+
       - name: Get build artifacts
         uses: actions/download-artifact@v3
         with:
           name: dist-files
           path: ./dist
           # this path will be used below in the deploy of these files to the s3 bucket below
+
       - name: Output contents
       # the dist-files are now on the deploy runner.
         run: ls
+      
+      
+
+      - name: Get permissions to access S3 bucket on AWS using OpenID and our identity provider and role (ARN)
+      # need to use the aws-actions/configure-aws-credentials
+      # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services#updating-your-github-actions-workflow
+      # https://github.com/aws-actions/configure-aws-credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        #  NOTE the current version is @v2 but use this version to be compatible with the lab
+
+        # the id-token scope permission is always no by default so we must explicitly override this 
+        # the script will not be able to create this token with default settings due to lack of permissions.
+        # see above permissions: added to the deploy job (not entire workflow)
+
+        with:
+        #these are the inputs that are reqired for the actions/configure-aws-credentials
+        # we need to get the OpenID access token from AWS using the identity provider that we configured
+        # The identity provider and its role is identified each by their ARN based on the IAM configuration
+        # we need the role ARN below
+        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services#requesting-the-access-token
+          role-to-assume: arn:aws:iam::725291656587:role/github_identity_provider_role_1
+          aws-region: us-west-1
+          # this is the region of the new s3 bucket that I created for this project
+          # we no longer need the bucket region in the step below
+
+
       - name: Deploy site
         id: deploy-step
         #run: echo "Deploying..."
@@ -127,7 +172,7 @@ jobs:
  
 
 
-        env:
+       #env:
         # since the AWS access id and secret id are only needed in this step
         # we should specify them here at this level
         # these will only be accessible by this step
@@ -136,21 +181,31 @@ jobs:
         # these keys now are accessible by our custom action js and main.js 
         # the aws cli command in main.js will automatically look for these variables to authenticate the request
         # since these are available on the github repo, the deploy runner will have access to them.
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+          #AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          #AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
 # AWS access id and secret are still required with the docker python approach, and the 
 # AWS boto3 SDK in the python code will know to use these in order to write to the s3 bucket.
 # the python code is s3_client = boto3.client
 
+# **** IMPORTANT**** WITH OpenID identity provider for AWS we no longer need the AWS access key and secret key above
+
 
         with:
         # provide the input variables that we defined in the action.yml and main.js
-          my-s3-bucket: github-actions-custom-action-js
-          # this is my specific s3 bucket that I configured
+          #my-s3-bucket: github-actions-custom-action-js
+          # this is my specific s3 bucket that I configured (original project)
+          my-s3-bucket: github-actions-security-open-id
+          # this is the new s3 bucket that was provisioned for this project with the appropriate bucket policy as well.
+          
           dist-folder: ./dist
           # this file is local and on root of this directory on the deploy runner, so ./dist
           # see path: specified above
-          bucket-region: us-west-1
+          
+          # the bucket-region is now specified in the aws-region above so we can comment this out.
+          #bucket-region: us-west-1
+
       - name: Output information of the website to github logs
         run: |
           echo "Live URL from AWS: ${{ steps.deploy-step.outputs.my-website-url }}"  
