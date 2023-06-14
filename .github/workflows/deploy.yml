@@ -108,7 +108,7 @@ jobs:
   # contents: read as well because AWS will a have to get the dist files onto S3.
   # Github also needs this read permission because it  has to download the artifacts to the runner/container.
   # We need this now because once a write permission is granted (id-token) all other permissions are denied unless specifically listed
-  # so the actions/checkout will not work without the contents: read
+  # so the actions/checkout will not work without the contents: read.
 
     permissions:
       id-token: write
