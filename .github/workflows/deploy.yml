@@ -120,10 +120,10 @@ jobs:
         
         # this is where a container is started, to run the python script and
         # to deploy these files on the deploy runner to AWS.
-        #uses: ./.github/actions/deploy-s3-docker
+        uses: ./.github/actions/deploy-s3-docker
 
         # the next path is for remote repository hosting of the js custom action used earlier:
-        uses: dmastrop/github-actions91-remote-repo-custom-action-javascript@v1
+        #uses: dmastrop/github-actions91-remote-repo-custom-action-javascript@v1
  
 
 
