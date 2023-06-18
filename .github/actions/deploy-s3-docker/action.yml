@@ -32,3 +32,5 @@ runs:
   # the runner will instantiate the docker container using this Dockerfile.
   # could also use a dockerhub container.
   # https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions#runs-for-docker-container-actions
+  # The Dockerfile runs the container and with the command to run the deployment.py code.
+  # The output of the python is "my-website-url"

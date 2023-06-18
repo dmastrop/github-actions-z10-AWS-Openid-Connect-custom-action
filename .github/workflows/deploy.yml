@@ -166,6 +166,8 @@ jobs:
         
         # this is where a container is started, to run the python script and
         # to deploy these files on the deploy runner to AWS.
+        # this is where the action.yml is invoked and action.yml starts up the docker container, which runs the deployment.py python script
+        # which outputs the "my-website-url". This is echoed below in the "Output information of the website to github logs" (see below)
         uses: ./.github/actions/deploy-s3-docker
 
         # the next path is for remote repository hosting of the js custom action used earlier:
